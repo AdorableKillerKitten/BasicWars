@@ -1,5 +1,6 @@
+DECLARE SUB drawTileMap ()
 DECLARE SUB drawCell (x!, y!, col!)
-DECLARE SUB moveGrid (x1!, x2!, y1!, y2!)
+DECLARE SUB moveGrid ()
 DECLARE SUB moveAnimation (offset!)
 DECLARE SUB inputHandler ()
 DECLARE SUB drawCursor (menuPos)
@@ -7,7 +8,8 @@ DECLARE SUB printMenu ()
 DECLARE SUB drawGrid ()
 DECLARE SUB drawUnit (x, y)
 
-DIM mGrid(5, 5)
+DIM SHARED tile1(20, 20)
+DIM SHARED mGrid(5, 5)
 DIM SHARED gamestate
 DIM SHARED menuPos
 DIM SHARED px!
@@ -30,6 +32,14 @@ mGrid(i, k) = z
 
 NEXT
 NEXT
+
+FOR i = 1 TO 20
+FOR k = 1 TO 20
+READ z
+tile1(i, k) = z
+NEXT
+NEXT
+
 menuPos = 0
 gamestate = 0 OR 128
 px! = 25
@@ -41,16 +51,23 @@ cursorx! = 20
 cursory! = 20
 stepsize = 20
 unitSelect = 0
-row = 0
+row% = 0
 col% = 0
 CLS
 SCREEN 7, , 1, 0
 COLOR 1
-
+drawTileMap
+PCOPY 1, 3
 WHILE 1:
 
         CLS
+        PCOPY 3, 1
         drawGrid
+        IF (gamestate AND 8) = 8 THEN
+        moveGrid
+               
+        END IF
+
         drawUnit cursorx, cursory
         IF (gamestate = 129) THEN
                 printMenu
@@ -59,13 +76,6 @@ WHILE 1:
 
         inputHandler
         moveAnimation offset!
-        row = px! / 20
-        col% = (py! / 20)
-        FOR i = 1 TO 5
-        FOR k = 1 TO 5
-        IF mGrid(i, k) = 1 THEN drawCell (row - 1 + i), (col% - 2 + k), 4
-        NEXT
-        NEXT
 
         WAIT &H3DA, 8
         PCOPY 1, 0
@@ -77,6 +87,27 @@ DATA 0,1,1,1,0
 DATA 1,1,1,1,1
 DATA 0,1,1,1,0
 DATA 0,0,1,0,0
+
+DATA 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+DATA 2, 10, 2, 2, 2, 10, 2, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+DATA 2, 10, 2, 2, 2, 10, 2, 10, 2, 14, 2, 2, 2, 14, 2, 2, 14, 2, 10, 2
+DATA 2, 10, 2, 10, 2, 2, 2, 10, 2, 10, 2, 10, 2, 10, 2, 2, 10, 2, 10, 2
+DATA 2, 2, 2, 10, 2, 10, 2, 2, 2, 10, 2, 10, 2, 10, 2, 2, 10, 2, 10, 2
+DATA 10, 2, 2, 10, 2, 10, 2, 14, 2, 10, 2, 10, 2, 10, 2, 2, 10, 2, 2, 2
+DATA 10, 2, 14, 2, 2, 10, 2, 10, 2, 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2
+DATA 10, 2, 10, 2, 10, 2, 2, 10, 2, 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2
+DATA 2, 2, 10, 2, 10, 2, 2, 10, 2, 2, 2, 14, 2, 2, 10, 2, 2, 2, 2, 2
+DATA 2, 2, 10, 2, 10, 2, 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2, 10, 2, 2
+DATA 2, 2, 2, 14, 2, 2, 10, 2, 2, 10, 2, 10, 2, 10, 2, 10, 2, 10, 2, 2
+DATA 2, 2, 2, 10, 2, 2, 10, 2, 2, 10, 2, 10, 2, 10, 2, 10, 2, 10, 2, 2
+DATA 2, 2, 2, 10, 2, 2, 10, 2, 2, 10, 2, 2, 2, 10, 2, 10, 2, 2, 2, 2
+DATA 2, 2, 2, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+DATA 2, 2, 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2, 2, 2, 10, 2, 14, 2, 2
+DATA 2, 2, 10, 2, 2, 14, 2, 10, 2, 2, 14, 2, 2, 14, 2, 10, 2, 10, 2, 2
+DATA 2, 2, 10, 2, 2, 10, 2, 10, 2, 2, 10, 2, 2, 10, 2, 10, 2, 10, 2, 2
+DATA 2, 2, 10, 2, 2, 10, 2, 2, 2, 2, 10, 2, 2, 10, 2, 2, 2, 2, 2, 2
+DATA 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+DATA 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 
 SUB dispMovArea
 
@@ -98,15 +129,32 @@ upRightY = 33
 size = 7
 jump = 16
 
-LINE (upRightX, upRightY + jump * menuPos)-(upRightX + size, upRightY + size + jump * menuPos), 9, BF
+LINE (upRightX, upRightY + jump * menuPos)-(upRightX + size, upRightY + size + jump * menuPos), 0, BF
 END SUB
 
 SUB drawGrid
 FOR i = 0 TO 300 STEP 20
-        LINE (i, 0)-(i, 180)
-        LINE (0, i)-(300, i)
+        LINE (i, 0)-(i, 180), 15
+        LINE (0, i)-(300, i), 15
 NEXT
 
+END SUB
+
+SUB drawTileMap
+x = 0
+y = 0
+start:
+WHILE x < 300:
+FOR i = 0 TO 20
+FOR k = 1 TO 20
+        PSET (x + k, i + y), tile1(i, k)
+NEXT
+NEXT
+x = x + 20
+WEND
+y = y + 20
+x = 0
+IF y < 180 THEN GOTO start
 END SUB
 
 SUB drawUnit (x, y)
@@ -122,12 +170,12 @@ SUB inputHandler
         SELECT CASE C
 
                 CASE 100
-                        IF gamestate AND 1 = 1 THEN
+                        IF (gamestate AND 1) = 0 THEN
                                 cursorx! = cursorx! + stepsize
                         END IF
               
                 CASE 115
-                        IF gamestate = 128 THEN
+                        IF (gamestate AND 1) = 0 THEN
                                 cursory! = cursory! + stepsize
                 ELSE
 
@@ -136,10 +184,12 @@ SUB inputHandler
                 END IF
       
         CASE 97
+                IF (gamestate AND 1) = 0 THEN
                 cursorx = cursorx! - stepsize
+                END IF
       
         CASE 119
-                IF gamestate = 128 THEN
+                IF (gamestate AND 1) = 0 THEN
                       
                         cursory! = cursory! - stepsize
                 ELSE
@@ -149,15 +199,22 @@ SUB inputHandler
                 END IF
       
         CASE 13
+                IF gamestate = 128 THEN
                 pxT = cursorx! + 5
                 pyT = cursory! + 5
+                ELSE IF gamestate = 129 AND menuPos = 0 THEN gamestate = gamestate OR 8
+                END IF
         CASE 27
               
                 END
       
         CASE 32
 
-        gamestate = (NOT (gamestate) AND 1) OR 128
+        IF (gamestate AND 1) = 1 THEN
+        gamestate = gamestate AND 254
+        ELSE
+        gamestate = gamestate OR 1
+        END IF
 
 
         END SELECT
@@ -179,15 +236,14 @@ END IF
 LINE (px!, py!)-(px! + offset!, py! + offset!), 5, BF
 END SUB
 
-SUB moveGrid (x1, x2, y1, y2)
-FOR i = x1 TO x2 STEP 20
-        LINE (i, y1)-(i, y2), 4
-        
-NEXT
-FOR i = y1 TO y2 STEP 20
-        LINE (x1, i)-(x2, i), 4
-       
-NEXT
+SUB moveGrid
+        row% = px! / 20
+        col% = (py! / 20)
+        FOR i = 1 TO 5
+        FOR k = 1 TO 5
+        IF mGrid(i, k) = 1 THEN drawCell (row% - 3 + i), (col% - 3 + k), 4
+        NEXT
+        NEXT
 
 
 END SUB
